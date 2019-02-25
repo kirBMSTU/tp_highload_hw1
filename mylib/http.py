@@ -52,7 +52,7 @@ class HTTPRequest:
 
 		if params:
 			self.method, self.path = params[0]
-			if self.path == '/':
+			if self.path in ['', '/', ' ']:
 				self.path = 'index.html'
 			self.file_type = self.path.split('.')[-1]
 		else:

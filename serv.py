@@ -14,7 +14,8 @@ mime_types = {
 	'jpeg': 'image/jpeg',
 	'png': 'image/png',
 	'gif': 'image/gif',
-	'swf': 'application/x-shockwave-flash'
+	'swf': 'application/x-shockwave-flash',
+	'txt': 'text/plain'
 }
 
 sock = socket.socket()
@@ -49,22 +50,6 @@ while True:
 	)
 	resp.add_header('Date', date_header)
 
-	resp.add_header('Content-Type', 'text/html; charset=utf-8')
-	# html = """
-	# 	<html>
-	# 		<head>
-	# 			<title>HighLoad</title>
-	# 		</head>
-	# 		<body>
-	# 			<h1>Мой хттп сервер</h1>
-	# 			<hr>
-	# 			<h2>Вы {}й клиент</h2>
-	# 			<a href="/">Перезагрузить страницу</a>
-	# 		</body>
-	# 	</html>""".format(conn_counter+1)
-	#
-	# resp.add_body(html)
-
 	while True:
 		data = conn.recv(1024)
 		if not data:
@@ -77,19 +62,29 @@ while True:
 		elif req.method not in ['GET', 'HEAD']:
 			resp.set_status(405, 'Method Not Allowed')
 		else:
-			print(req.path, req.file_type)
-			handle = open(os.path.join(DOCUMENT_ROOT, 'test.txt'), "r")
+			try:
+				handle = open(os.path.join(DOCUMENT_ROOT, req.path), "r")
 
-			result = ''
-			while True:
-				data = handle.read(1024)
-				result += data
+				result = ''
+				while True:
+					data = handle.read(1024)
+					result += data
 
-				if not data:
-					handle.close()
-					break
+					if not data:
+						handle.close()
+						break
 
-			resp.add_body(result)
+				resp.add_body(result)
+
+				if req.file_type in mime_types.keys():
+					resp.add_header('Content-Type', '{}; charset=utf-8'.format(mime_types[req.file_type]))
+				else:
+					resp.add_header('Content-Type', '{}; charset=utf-8'.format('text/plain'))
+
+				resp.add_header('Content-Length', len(result) )
+
+			except FileNotFoundError:
+				resp.set_status(404, 'Not Found')
 
 		conn.send(resp.to_bytes_string())
 		break
