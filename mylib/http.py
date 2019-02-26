@@ -33,6 +33,26 @@ class HTTPResponse:
 
 		return result.encode()
 
+	def set_default(self):
+		self.set_status(200, 'OK')
+		self.add_header('Connection', 'Closed')
+		self.add_header('Server', 'kirServer 0.1')
+
+		from datetime import datetime
+		import calendar as c
+
+		now = datetime.utcnow()
+		date_header = '{}, {} {} {} {:02d}:{:02d}:{:02d} GMT'.format(
+			c.day_abbr[now.weekday()],
+			now.day,
+			c.month_abbr[now.month],
+			now.year,
+			now.hour,
+			now.minute,
+			now.second
+		)
+		self.add_header('Date', date_header)
+		return self
 
 class HTTPRequest:
 	def __init__(self, data):
@@ -42,16 +62,16 @@ class HTTPRequest:
 		self.headers = {}
 		self.path = ''
 		self.file_type = ''
+		self.query_params = ''
 		self._process()
 
 	def _process(self):
 		import re
 
-		pattern = re.compile(r'(GET|HEAD|POST|OPTIONS|PUT|PATCH|DELETE|TRACE|CONNECT) /(.*) HTTP')
+		pattern = re.compile(r'(GET|HEAD|POST|OPTIONS|PUT|PATCH|DELETE|TRACE|CONNECT) /([A-Za-z0-9.]*)(\??.*) HTTP')
 		params = re.findall(pattern, self.data)
-
 		if params:
-			self.method, self.path = params[0]
+			self.method, self.path, self.query_params = params[0]
 			if self.path in ['', '/', ' ']:
 				self.path = 'index.html'
 			self.file_type = self.path.split('.')[-1]

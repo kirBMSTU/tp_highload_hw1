@@ -3,10 +3,58 @@ import socket
 from datetime import datetime
 import calendar as c
 import os
+import threading
+
+
+def worker(conn):
+	resp = HTTPResponse().set_default()
+	while True:
+		data = conn.recv(1024)
+		if not data:
+			break
+
+		req = HTTPRequest(data.decode("utf-8"))
+
+		if req.error == 'Unknown method':
+			resp.set_status(400, 'Bad Request')
+		elif req.method not in ['GET', 'HEAD']:
+			resp.set_status(405, 'Method Not Allowed')
+		else:
+			try:
+				handle = open(os.path.join(DOCUMENT_ROOT, req.path), "rb")
+
+				result = b''
+				while True:
+					file_data = handle.read(1024)
+					result += file_data
+
+					if not file_data:
+						handle.close()
+						break
+
+				resp.add_body(result)
+
+				if req.file_type in MIME_TYPES.keys():
+					resp.add_header('Content-Type', '{}; charset=utf-8'.format(MIME_TYPES[req.file_type]))
+				else:
+					resp.add_header('Content-Type', '{}; charset=utf-8'.format('text/plain'))
+
+				resp.add_header('Content-Length', len(result))
+
+			except FileNotFoundError:
+				resp.set_status(404, 'Not Found')
+
+		conn.send(resp.to_bytes_string())
+		break
+
+	conn.close()
+
+	print('connection closed\n\n\n\n\n')
+
 
 DOCUMENT_ROOT = 'temp/'
 
-mime_types = {
+MIME_TYPES = {
 	'html': 'text/html',
 	'css': 'text/css',
 	'js': 'application/javascript',
@@ -24,14 +72,18 @@ sock.bind(('', 8080))
 
 conn_counter = 0
 
+
 while True:
-	sock.listen(1)
+	sock.listen(10)
 
 	conn, addr = sock.accept()
-
 	conn_counter += 1
-
 	print('connected {}th client, ip: {}'.format(conn_counter, str(addr)))
+
+	# по идее вот тут суем conn в тред и полетели
+	# handler = threading.Thread(target=worker, args=(conn,))
+	worker(None)
+
 
 	resp = HTTPResponse()
 	resp.set_status(200, 'OK')
@@ -63,9 +115,9 @@ while True:
 			resp.set_status(405, 'Method Not Allowed')
 		else:
 			try:
-				handle = open(os.path.join(DOCUMENT_ROOT, req.path), "r")
+				handle = open(os.path.join(DOCUMENT_ROOT, req.path), "rb")
 
-				result = ''
+				result = b''
 				while True:
 					data = handle.read(1024)
 					result += data
@@ -76,12 +128,12 @@ while True:
 
 				resp.add_body(result)
 
-				if req.file_type in mime_types.keys():
-					resp.add_header('Content-Type', '{}; charset=utf-8'.format(mime_types[req.file_type]))
+				if req.file_type in MIME_TYPES.keys():
+					resp.add_header('Content-Type', '{}; charset=utf-8'.format(MIME_TYPES[req.file_type]))
 				else:
 					resp.add_header('Content-Type', '{}; charset=utf-8'.format('text/plain'))
 
-				resp.add_header('Content-Length', len(result) )
+				resp.add_header('Content-Length', len(result))
 
 			except FileNotFoundError:
 				resp.set_status(404, 'Not Found')
@@ -95,4 +147,6 @@ while True:
 
 print('end server')
 sock.close()
+
+
 
