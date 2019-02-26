@@ -54,6 +54,7 @@ class HTTPResponse:
 		self.add_header('Date', date_header)
 		return self
 
+
 class HTTPRequest:
 	def __init__(self, data):
 		self.data = data
@@ -80,3 +81,16 @@ class HTTPRequest:
 
 	def __getitem__(self, key):
 		return self.headers.get(key)
+
+
+MIME_TYPES = {
+	'html': 'text/html',
+	'css': 'text/css',
+	'js': 'application/javascript',
+	'jpg': 'image/jpeg',
+	'jpeg': 'image/jpeg',
+	'png': 'image/png',
+	'gif': 'image/gif',
+	'swf': 'application/x-shockwave-flash',
+	'txt': 'text/plain'
+}
