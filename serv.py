@@ -2,10 +2,16 @@ import socket
 import threading
 from worker import worker
 import os
+from mylib.cfg_parser import get_config_params
 
 
-DOCUMENT_ROOT = os.environ['DOCUMENT_ROOT']  # 'temp/'
+CONFIG = os.environ['CONFIG']  # '/etc/httpd.conf'
+cfg = get_config_params(CONFIG)
+if not cfg:
+	exit('correct config expected')
 
+DOCUMENT_ROOT = cfg['document_root']
+THREAD_LIMIT = cfg['thread_limit']
 
 sock = socket.socket()
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -19,10 +25,9 @@ while True:
 
 	conn, addr = sock.accept()
 	conn_counter += 1
-	print('connected {}th client, ip: {}'.format(conn_counter, str(addr)))
 
 	# по идее вот тут суем conn в тред и полетели
-	handler = threading.Thread(target=worker, args=(conn, conn_counter, DOCUMENT_ROOT))
+	handler = threading.Thread(target=worker, args=(conn, conn_counter, DOCUMENT_ROOT, addr[0]))
 	handler.start()
 
 

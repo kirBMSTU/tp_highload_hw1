@@ -1,4 +1,6 @@
 # в случае если не установлен код и статус ответа, он будет 200 OK
+from urllib import parse
+import re
 
 
 class HTTPResponse:
@@ -21,15 +23,17 @@ class HTTPResponse:
 		self.body = body
 
 	def to_bytes_string(self):
-		result = '{} {}\n'.format(self.http_version, self.status)
+		result = '{} {}\r\n'.format(self.http_version, self.status)
 		for key, value in self.headers.items():
-			result += '{}: {}\n'.format(key, value)
+			result += '{}: {}\r\n'.format(key, value)
 
 		if self.body:
 			if type(self.body) == bytes:
-				return result.encode() + b'\n\n' + self.body
+				return result.encode() + b'\r\n' + self.body
 			else:
-				result += '\n\n' + self.body
+				result += '\r\n' + self.body
+		else:
+			result += '\r\n'
 
 		return result.encode()
 
@@ -66,15 +70,25 @@ class HTTPRequest:
 		self.query_params = ''
 		self._process()
 
-	def _process(self):
-		import re
+	@staticmethod
+	def _decode_url_symbol(encoded):
+		# print('URLDECODED: {}'.format(re.sub(r'%(0-9A-Fa-f)', self._decode_url_symbol, self.path)))
 
-		pattern = re.compile(r'(GET|HEAD|POST|OPTIONS|PUT|PATCH|DELETE|TRACE|CONNECT) /([A-Za-z0-9.]*)(\??.*) HTTP')
+		return chr(int(encoded, 16))
+
+	def _process(self):
+		pattern = re.compile(r'(GET|HEAD|POST|OPTIONS|PUT|PATCH|DELETE|TRACE|CONNECT) /([A-Za-z0-9%][A-Za-z0-9%.\-_/ ]*)(\??.*) HTTP')
 		params = re.findall(pattern, self.data)
 		if params:
 			self.method, self.path, self.query_params = params[0]
+			self.path = parse.unquote(self.path)
+
 			if self.path in ['', '/', ' ']:
 				self.path = 'index.html'
+
+			if re.findall(r'/\.\.', self.path):
+				self.error = 'Root directory escape'
+
 			self.file_type = self.path.split('.')[-1]
 		else:
 			self.error = 'Unknown method'
