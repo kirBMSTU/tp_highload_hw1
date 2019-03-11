@@ -12,7 +12,7 @@ def worker(conn, id, document_root, ip):
 			break
 
 		req = HTTPRequest(data.decode("utf-8"))
-		print('{} -- [{}] \"{} {}\"'.format(str(ip), resp.headers['Date'], req.method, req.path))  # access.log
+		# print('{} -- [{}] \"{} {}\"'.format(str(ip), resp.headers['Date'], req.method, req.path))  # access.log
 
 		if req.error == 'Unknown method':
 			resp.set_status(400, 'Bad Request')
