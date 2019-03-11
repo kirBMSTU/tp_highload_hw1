@@ -31,9 +31,9 @@ class HTTPResponse:
 			if type(self.body) == bytes:
 				return result.encode() + b'\r\n' + self.body
 			else:
-				result += '\r\n\r\n' + self.body
+				result += '\r\n' + self.body
 		else:
-			result += '\r\n\r\n'
+			result += '\r\n'
 
 		return result.encode()
 
