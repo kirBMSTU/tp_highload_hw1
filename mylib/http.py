@@ -70,23 +70,17 @@ class HTTPRequest:
 		self.query_params = ''
 		self._process()
 
-	@staticmethod
-	def _decode_url_symbol(encoded):
-		# print('URLDECODED: {}'.format(re.sub(r'%(0-9A-Fa-f)', self._decode_url_symbol, self.path)))
-
-		return chr(int(encoded, 16))
-
 	def _process(self):
 		pattern = re.compile(r'(GET|HEAD|POST|OPTIONS|PUT|PATCH|DELETE|TRACE|CONNECT) /([A-Za-z0-9%][A-Za-z0-9%.\-_/ ]*)(\??.*) HTTP')
-		params = re.findall(pattern, self.data)
+		params = re.search(pattern, self.data)
 		if params:
-			self.method, self.path, self.query_params = params[0]
+			self.method, self.path, self.query_params = params[1]
 			self.path = parse.unquote(self.path)
 
 			if self.path in ['', '/', ' ']:
 				self.path = 'index.html'
 
-			if re.findall(r'/\.\.', self.path):
+			if re.search(r'/\.\.', self.path):
 				self.error = 'Root directory escape'
 
 			self.file_type = self.path.split('.')[-1]
