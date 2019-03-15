@@ -74,7 +74,7 @@ class HTTPRequest:
 		pattern = re.compile(r'(GET|HEAD|POST|OPTIONS|PUT|PATCH|DELETE|TRACE|CONNECT) /([A-Za-z0-9%][A-Za-z0-9%.\-_/ ]*)(\??.*) HTTP')
 		params = re.search(pattern, self.data)
 		if params:
-			self.method, self.path, self.query_params = params[1]
+			self.method, self.path, self.query_params = params[1], params[2], params[3]
 			self.path = parse.unquote(self.path)
 
 			if self.path in ['', '/', ' ']:
